@@ -1,0 +1,70 @@
+#!/bin/bash
+#  -*- sh -*-
+
+: << =cut
+
+=head1 NAME
+
+speed - Plugin to monitor your Tesla speed
+
+=head1 CONFIGURATION
+
+This is a wildcard plugin. To monitor a car, link tesla_speed_<vin>
+to this file. For example:
+
+  ln -s /usr/share/munin/plugins/tesla_speed_ \
+        /etc/munin/plugins/tesla_speed_abcdefghijklm123456
+        
+Will monitor speed of a car with VIN abcdefghijklm123456
+
+=head1 AUTHOR
+
+Gandalf <gandalf@hive.io>
+
+=head1 LICENSE
+
+GPLv3
+
+=head1 MAGIC MARKERS
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+. "$MUNIN_LIBDIR/plugins/plugin.sh"
+
+VIN=${0##*tesla_speed_}
+
+case $1 in
+    autoconf)
+        if [ -r /var/run/munin/tesla_status.txt ]; then
+                echo yes
+                exit 0
+        else
+                echo "no (API output not found)"
+                exit 0
+        fi
+        ;;
+    config)
+        title=${VIN}
+            if [[ "$nickname" ]]; then
+                title="$nickname"
+            fi
+        echo "graph_title Tesla ${title} Speed"
+        echo 'graph_args --base 1000 -l 0'
+        echo 'graph_vlabel Speed (km/h)'
+        echo 'graph_scale no'
+        echo 'graph_category system'
+        echo 'graph_info This graph shows vehicle speed.'
+        echo 'speed.label Speed'
+        print_warning speed
+        print_critical speed
+        exit 0
+        ;;
+esac
+
+echo -n "speed.value "
+spd=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .drive_state.speed' )
+km_spd=$( bc -l <<<"1.60934 * $spd" )
+echo $km_spd

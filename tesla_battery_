@@ -1,0 +1,79 @@
+#!/bin/sh
+#  -*- sh -*-
+
+: << =cut
+
+=head1 NAME
+
+tesla_battery_ - Wildcard-plugin to monior your Tesla car battery
+
+=head1 CONFIGURATION
+
+This is a wildcard plugin. To monitor a car, link tesla_batery_<vin>
+to this file. For example:
+
+  ln -s /usr/share/munin/plugins/tesla_battery_ \
+        /etc/munin/plugins/tesla_battery_abcdefghijklm123456
+        
+Will monitor battery of a car with VIN abcdefghijklm123456
+
+=head1 AUTHOR
+
+Gandalf <gandalf@hive.io>
+
+=head1 LICENSE
+
+GPLv3
+
+=head1 MAGIC MARKERS
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+. "$MUNIN_LIBDIR/plugins/plugin.sh"
+
+VIN=${0##*tesla_battery_}
+
+case $1 in
+    autoconf)
+	if [ -r /var/run/munin/tesla_status.txt ]; then
+		echo yes
+		exit 0
+	else
+		echo "no (API output not found)"
+		exit 0
+	fi
+	;;
+    config)
+        title=${VIN}
+	    if [[ "$nickname" ]]; then
+		title="$nickname"
+	    fi
+        echo "graph_title Tesla ${title} Battery"
+        echo 'graph_args --base 1000 -l 0 -u 100 -r'
+        echo 'graph_vlabel Level (%)'
+        echo 'graph_scale no'
+        echo 'graph_category system'
+        echo 'graph_info This graph shows battery level.'
+        echo 'battery_level.label battery_level'
+        echo 'battery_level.info Battery level.'
+        echo 'usable_battery_level.label usable_battery_level'
+        echo 'usable_battery_level.info Usable battery level.'
+        echo 'charge_energy_added.label Charge energy added'
+        echo 'charge_energy_added.info Charge energy added.'
+        print_warning battery_level
+        print_critical battery_level
+        exit 0
+        ;;
+esac
+
+echo -n "battery_level.value "
+cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.battery_level'
+
+echo -n "usable_battery_level.value "
+cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.usable_battery_level'
+
+echo -n "charge_energy_added.value "
+cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.charge_energy_added'

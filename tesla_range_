@@ -1,0 +1,92 @@
+#!/bin/bash
+#  -*- sh -*-
+
+: << =cut
+
+=head1 NAME
+
+range - Plugin to monitor your Tesla range
+
+=head1 CONFIGURATION
+
+This is a wildcard plugin. To monitor a car, link tesla_range_<vin>
+to this file. For example:
+
+  ln -s /usr/share/munin/plugins/tesla_range_ \
+        /etc/munin/plugins/tesla_range_abcdefghijklm123456
+        
+Will monitor range of a car with VIN abcdefghijklm123456
+
+=head1 AUTHOR
+
+Gandalf <gandalf@hive.io>
+
+=head1 LICENSE
+
+GPLv3
+
+=head1 MAGIC MARKERS
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+. "$MUNIN_LIBDIR/plugins/plugin.sh"
+
+VIN=${0##*tesla_range_}
+
+case $1 in
+    autoconf)
+        if [ -r /var/run/munin/tesla_status.txt ]; then
+                echo yes
+                exit 0
+        else
+                echo "no (API output not found)"
+                exit 0
+        fi
+        ;;
+    config)
+        title=${VIN}
+            if [[ "$nickname" ]]; then
+                title="$nickname"
+            fi
+        echo "graph_title Tesla ${title} Range"
+        echo 'graph_args --base 1000 -l 0'
+        echo 'graph_vlabel Range (km)'
+        echo 'graph_scale no'
+        echo 'graph_category system'
+        echo 'graph_info This graph shows range.'
+        echo 'battery_range.label Battery range'
+        echo 'battery_range.info Range.'
+        echo 'ideal_battery_range.label Ideal battery range'
+        echo 'ideal_battery_range.info Ideal battery range.'
+        echo 'est_battery_range.label Estimated battery range'
+        echo 'est_battery_range.info Estimated battery range.'
+        echo 'overhead_range.label Overhead'
+        echo 'overhead_range.info Overhead range. Difference between ideal and estimated range.'
+        print_warning battery_range
+        print_critical battery_range
+        exit 0
+        ;;
+esac
+
+echo -n "battery_range.value "
+rng=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.battery_range' )
+km_rng=$( bc -l <<<"1.60934 * $rng" )
+echo $km_rng
+
+echo -n "ideal_battery_range.value "
+idl=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.ideal_battery_range' )
+km_idl=$( bc -l <<<"1.60934 * $idl" )
+echo $km_idl
+
+echo -n "est_battery_range.value "
+est=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.est_battery_range' )
+km_est=$( bc -l <<<"1.60934 * $est" )
+echo $km_est
+
+echo -n "overhead_range.value "
+ovr=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.overhead_range' )
+km_ovr=$( bc -l <<<"$km_idl - $km_est" )
+echo $km_ovr
