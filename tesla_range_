@@ -74,18 +74,18 @@ esac
 echo -n "battery_range.value "
 rng=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.battery_range' )
 km_rng=$( bc -l <<<"1.60934 * $rng" )
-echo $km_rng
+echo "$km_rng"
 
 echo -n "ideal_battery_range.value "
 idl=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.ideal_battery_range' )
 km_idl=$( bc -l <<<"1.60934 * $idl" )
-echo $km_idl
+echo "$km_idl"
 
 echo -n "est_battery_range.value "
 est=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.est_battery_range' )
 km_est=$( bc -l <<<"1.60934 * $est" )
-echo $km_est
+echo "$km_est"
 
 echo -n "overhead_range.value "
 km_ovr=$( bc -l <<<"$km_idl - $km_est" )
-echo $km_ovr
+echo "$km_ovr"

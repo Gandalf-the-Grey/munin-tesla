@@ -67,4 +67,4 @@ esac
 echo -n "speed.value "
 spd=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .drive_state.speed' )
 km_spd=$( bc -l <<<"1.60934 * $spd" )
-echo $km_spd
+echo "$km_spd"

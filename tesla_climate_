@@ -71,16 +71,16 @@ esac
 
 echo -n "driver_temp_setting.value "
 dts=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .climate_state.driver_temp_setting' )
-echo $dts
+echo "$dts"
 
 echo -n "passenger_temp_setting.value "
 pts=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .climate_state.passenger_temp_setting' )
-echo $pts
+echo "$pts"
 
 echo -n "inside_temp.value "
 it=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .climate_state.inside_temp' )
-echo $it
+echo "$it"
 
 echo -n "outside_temp.value "
 ot=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .climate_state.outside_temp' )
-echo $ot
+echo "$ot"

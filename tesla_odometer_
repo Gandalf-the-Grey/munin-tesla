@@ -67,4 +67,4 @@ esac
 echo -n "odometer.value "
 value=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .vehicle_state.odometer' )
 km_value=$( bc -l <<<"1.60934 * $value" )
-echo $km_value
+echo "$km_value"
