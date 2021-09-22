@@ -87,6 +87,5 @@ km_est=$( bc -l <<<"1.60934 * $est" )
 echo $km_est
 
 echo -n "overhead_range.value "
-ovr=$( cat /var/run/munin/tesla_status.txt | /usr/bin/jq '. | select( .vin == "'${VIN}'" ) .charge_state.overhead_range' )
 km_ovr=$( bc -l <<<"$km_idl - $km_est" )
 echo $km_ovr
